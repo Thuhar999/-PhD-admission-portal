@@ -1,0 +1,104 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Poppins', sans-serif;
+
+  /* Primary - Deep Green */
+  --color-primary-50:  #eef6f1;
+  --color-primary-100: #d0e8d9;
+  --color-primary-200: #a2d2b4;
+  --color-primary-300: #6db88a;
+  --color-primary-400: #3d9c63;
+  --color-primary-500: #1e7a42;
+  --color-primary-600: #196136;
+  --color-primary-700: #1e5631;
+  --color-primary-800: #174528;
+  --color-primary-900: #0f2e1b;
+
+  /* Secondary - Maroon */
+  --color-maroon-50:  #fdf0f3;
+  --color-maroon-100: #fad5de;
+  --color-maroon-200: #f4a8bc;
+  --color-maroon-300: #e87090;
+  --color-maroon-400: #d63f67;
+  --color-maroon-500: #b8224a;
+  --color-maroon-600: #8f1a39;
+  --color-maroon-700: #7c1e3c;
+  --color-maroon-800: #63182f;
+  --color-maroon-900: #4a1123;
+
+  /* Accent - Gold */
+  --color-gold-50:  #fdf8ec;
+  --color-gold-100: #faecc8;
+  --color-gold-200: #f4d88f;
+  --color-gold-300: #edbd56;
+  --color-gold-400: #e3a22c;
+  --color-gold-500: #b8932a;
+  --color-gold-600: #9a7920;
+  --color-gold-700: #7c6018;
+  --color-gold-800: #5e4812;
+  --color-gold-900: #40310c;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: #f8f9f6;
+  color: #111827;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,h2,h3,h4,h5,h6,p,span,label,input,textarea,select,button,a,li,td,th {
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Print Styles */
+@media print {
+  @page {
+    size: A4;
+    margin: 15mm 15mm 15mm 15mm;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 11pt;
+    font-family: 'Poppins', sans-serif;
+  }
+
+  .no-print { display: none !important; }
+  .print-only { display: block !important; }
+
+  .page-break-before { page-break-before: always; break-before: page; }
+  .page-break-after  { page-break-after: always;  break-after: page;  }
+  .avoid-break       { page-break-inside: avoid;  break-inside: avoid; }
+
+  nav, header.app-nav, .sidebar, button { display: none !important; }
+
+  .print-doc {
+    background: white !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid #333; padding: 4pt 6pt; font-size: 10pt; }
+  th { background-color: #f0f0f0 !important; }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #c5c5c5; border-radius: 3px; }
+
+/* Signature canvas */
+canvas.sig-canvas {
+  cursor: crosshair;
+  touch-action: none;
+}
