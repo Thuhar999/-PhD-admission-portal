@@ -44,9 +44,9 @@ export function Login() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col font-poppins relative bg-gray-900">
+    <div className="min-h-screen flex flex-col font-poppins relative bg-gray-100">
       {/* ── Clean Top Navigation Bar ── */}
-      <nav className="bg-white/95 backdrop-blur-md border-b border-gray-200/80 sticky top-0 z-30 shadow-xs">
+      <nav className="bg-white/95 backdrop-blur-md border-b border-gray-200 sticky top-0 z-30 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 h-18 flex items-center justify-between">
           {/* Sahyadri Shield Logo + Title */}
           <div className="flex items-center gap-3.5">
@@ -78,54 +78,54 @@ export function Login() {
         </div>
       </nav>
 
-      {/* ── Main Hero Section with High-Res Campus Aerial Photo ── */}
+      {/* ── Main Hero Section with Crystal-Clear Full-HD Campus Background ── */}
       <div className="relative flex-1 flex items-center justify-center min-h-[calc(100vh-72px)] overflow-hidden">
-        {/* Background Image: High-res Campus Aerial Photo */}
+        {/* Background Image: Official Crystal-Clear 1920x1080 Campus Photo without blur */}
         <div className="absolute inset-0 z-0">
           <img
-            src="/campus-aerial.webp"
+            src="/campus-hd.jpg"
             alt="Sahyadri Campus Aerial View"
-            className="w-full h-full object-cover object-center scale-105 transform motion-safe:transition-transform motion-safe:duration-1000"
+            className="w-full h-full object-cover object-center"
           />
-          {/* Natural gradient scrim so photo is visible and crisp */}
-          <div className="absolute inset-0 bg-gradient-to-r from-primary-950/92 via-primary-950/78 to-primary-950/45" />
-          <div className="absolute inset-0 bg-gradient-to-t from-primary-950/90 via-transparent to-primary-950/30" />
+          {/* Soft natural gradient on the left for contrast, leaving the aerial photo crystal-clear */}
+          <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/80 to-transparent lg:w-7/12 pointer-events-none" />
+          <div className="absolute inset-0 bg-black/10 pointer-events-none" />
         </div>
 
         {/* Hero Content Grid */}
         <div className="relative z-10 max-w-7xl w-full mx-auto px-4 sm:px-8 py-10 lg:py-14 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
           
-          {/* Left Side: "Reimagining Education." */}
-          <div className="lg:col-span-7 text-white space-y-5">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-white/10 backdrop-blur-md rounded-full text-xs font-semibold text-gold-300 border border-white/15 shadow-sm">
+          {/* Left Side: "Reimagining Education." with Beautiful Sahyadri Brand Colors */}
+          <div className="lg:col-span-7 space-y-5">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-primary-800 text-gold-300 rounded-full text-xs font-semibold shadow-sm border border-primary-700">
               <Sparkles size={13} className="text-gold-400" />
               <span>NAAC A+ Grade • NBA Accredited • VTU Autonomous</span>
             </div>
 
-            {/* Giant Bold Headline */}
+            {/* Giant Bold Headline in Sahyadri Forest Green & Terracotta Orange */}
             <div className="space-y-0.5">
-              <h1 className="text-5xl sm:text-6xl xl:text-7xl font-extrabold tracking-tight text-white leading-none">
+              <h1 className="text-5xl sm:text-6xl xl:text-7xl font-extrabold tracking-tight text-[#0f3e1d] leading-none drop-shadow-xs">
                 Reimagining
               </h1>
-              <h1 className="text-5xl sm:text-6xl xl:text-7xl font-extrabold tracking-tight text-white leading-none">
-                Education<span className="text-gold-400">.</span>
+              <h1 className="text-5xl sm:text-6xl xl:text-7xl font-extrabold tracking-tight text-[#c8621a] leading-none drop-shadow-xs">
+                Education<span className="text-[#0f3e1d]">.</span>
               </h1>
             </div>
 
-            <p className="text-sm sm:text-base text-white/85 font-normal max-w-xl leading-relaxed">
+            <p className="text-sm sm:text-base text-gray-800 font-semibold max-w-xl leading-relaxed">
               Ph.D. Admission & Doctoral Registration Portal for VTU-recognized Research Centres at Sahyadri College of Engineering & Management.
             </p>
 
             {/* Research Centres tags */}
             <div className="pt-2">
-              <p className="text-[11px] uppercase font-bold tracking-wider text-white/60 mb-2">
+              <p className="text-[11px] uppercase font-bold tracking-wider text-gray-700 mb-2">
                 PH.D. RESEARCH CENTRES:
               </p>
               <div className="flex flex-wrap gap-2">
                 {['CSE', 'ECE', 'Chemistry', 'Physics', 'Mathematics', 'MBA', 'Mechanical'].map((dept) => (
                   <span
                     key={dept}
-                    className="px-3 py-1 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg text-xs font-medium text-white border border-white/10 transition-colors"
+                    className="px-3 py-1 bg-white/90 hover:bg-white text-primary-950 font-semibold rounded-lg text-xs border border-gray-200 shadow-xs transition-colors"
                   >
                     Ph.D. in {dept}
                   </span>
@@ -133,26 +133,26 @@ export function Login() {
               </div>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-4 pt-4 border-t border-white/15 max-w-lg">
+            {/* Stats in Sahyadri colors */}
+            <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-300/80 max-w-lg">
               <div>
-                <div className="text-2xl sm:text-3xl font-bold text-white">27+</div>
-                <div className="text-xs text-white/70">Years of Excellence</div>
+                <div className="text-2xl sm:text-3xl font-extrabold text-[#0f3e1d]">27+</div>
+                <div className="text-xs text-gray-700 font-semibold">Years of Excellence</div>
               </div>
               <div>
-                <div className="text-2xl sm:text-3xl font-bold text-gold-400">1200+</div>
-                <div className="text-xs text-white/70">Research Publications</div>
+                <div className="text-2xl sm:text-3xl font-extrabold text-[#c8621a]">1200+</div>
+                <div className="text-xs text-gray-700 font-semibold">Research Publications</div>
               </div>
               <div>
-                <div className="text-2xl sm:text-3xl font-bold text-white">7</div>
-                <div className="text-xs text-white/70">Research Centres</div>
+                <div className="text-2xl sm:text-3xl font-extrabold text-[#0f3e1d]">7</div>
+                <div className="text-xs text-gray-700 font-semibold">Research Centres</div>
               </div>
             </div>
           </div>
 
           {/* Right Side: Floating Login Card */}
           <div className="lg:col-span-5 flex justify-center lg:justify-end">
-            <div className="w-full max-w-md bg-white/98 backdrop-blur-xl border border-white/30 rounded-2xl shadow-2xl p-7 sm:p-8">
+            <div className="w-full max-w-md bg-white border border-gray-200/90 rounded-2xl shadow-2xl p-7 sm:p-8">
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900">Doctoral Portal</h2>
@@ -271,12 +271,12 @@ export function Login() {
       </div>
 
       {/* ── Sub-footer ── */}
-      <footer className="bg-[#0b1a10] text-white/60 text-xs py-3 px-4 sm:px-8 border-t border-white/10 z-20">
+      <footer className="bg-primary-950 text-white/70 text-xs py-3 px-4 sm:px-8 border-t border-primary-900 z-20">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px]">
           <div>
             © {new Date().getFullYear()} Sahyadri College of Engineering & Management. All rights reserved.
           </div>
-          <div className="flex items-center gap-4 text-white/70">
+          <div className="flex items-center gap-4 text-white/80">
             <span>Adyar, Mangaluru - 575007</span>
             <span>•</span>
             <span>research@sahyadri.edu.in</span>
