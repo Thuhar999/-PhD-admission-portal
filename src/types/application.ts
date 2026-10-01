@@ -4,7 +4,7 @@
 
 export type Programme = 'CSE' | 'EC' | 'CHEM' | 'PHY' | 'Maths' | 'MBA' | 'ME'
 
-export type ApplicationStatus = 'draft' | 'submitted'
+export type ApplicationStatus = 'draft' | 'submitted' | 'under_review' | 'needs_information' | 'approved' | 'rejected'
 
 export interface ScholarDetails {
   name: string
@@ -81,6 +81,7 @@ export interface Application {
   applicationNumber: string
   selectedProgramme: Programme
   status: ApplicationStatus
+  currentStep?: FormStep
   photograph?: string  // base64
   scholar: ScholarDetails
   supervisor: SupervisorDetails

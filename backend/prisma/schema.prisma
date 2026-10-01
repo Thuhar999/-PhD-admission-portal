@@ -1,0 +1,188 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  APPLICANT
+  REVIEWER
+  ADMIN
+}
+
+enum Programme {
+  CSE
+  EC
+  CHEM
+  PHY
+  Maths
+  MBA
+  ME
+}
+
+enum ApplicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  NEEDS_INFORMATION
+  APPROVED
+  REJECTED
+}
+
+enum SupervisorType {
+  SUPERVISOR
+  CO_SUPERVISOR
+}
+
+enum DocumentType {
+  UG_CONVOCATION_CERTIFICATE
+  PG_MARKS_CARD
+  VTU_APPLICATION_COPY
+  CASTE_CERTIFICATE
+  OTHER
+}
+
+enum SignatureType {
+  DRAWN
+  UPLOADED
+}
+
+model User {
+  id           String               @id @default(uuid())
+  email        String               @unique
+  passwordHash String
+  role         UserRole             @default(APPLICANT)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  applications Application[]        @relation("ApplicantApplications")
+  reviews      ApplicationStatusLog[] @relation("ReviewedBy")
+}
+
+model Application {
+  id                 String                 @id @default(uuid())
+  applicationNumber  String?                @unique
+  applicantId        String
+  applicant          User                   @relation("ApplicantApplications", fields: [applicantId], references: [id], onDelete: Restrict)
+  selectedProgramme  Programme
+  status             ApplicationStatus      @default(DRAFT)
+  currentStep        Int                    @default(1)
+  photographPath     String?
+  submittedAt        DateTime?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  scholar            ScholarDetails?
+  supervisors        SupervisorDetails[]
+  qualifications     Qualification[]
+  documents          ApplicationDocument[]
+  feePayments        FeePayment[]
+  declaration        Declaration?
+  statusHistory      ApplicationStatusLog[]
+
+  @@index([applicantId, status])
+  @@index([status, selectedProgramme])
+}
+
+model ScholarDetails {
+  id                      String      @id @default(uuid())
+  applicationId           String      @unique
+  application             Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  name                    String      @default("")
+  email                   String      @default("")
+  contactNumber           String      @default("")
+  whatsapp                String      @default("")
+  proposedResearchTopic   String      @default("")
+  profession              String      @default("")
+  guardianName            String      @default("")
+  alternateNumber         String      @default("")
+  studyMode               String      @default("")
+  addressForCommunication String      @default("")
+}
+
+model SupervisorDetails {
+  id                      String         @id @default(uuid())
+  applicationId           String
+  application             Application    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  type                    SupervisorType
+  hasCoSupervisor         Boolean        @default(false)
+  name                    String         @default("")
+  email                   String         @default("")
+  contactNumber           String         @default("")
+  whatsapp                String         @default("")
+  profession              String         @default("")
+  addressOfInstitution    String         @default("")
+  addressForCommunication String         @default("")
+
+  @@unique([applicationId, type])
+}
+
+model Qualification {
+  id            String      @id @default(uuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  degree        String
+  university    String
+  percentage    String
+  sortOrder     Int
+
+  @@index([applicationId, sortOrder])
+}
+
+model ApplicationDocument {
+  id            String       @id @default(uuid())
+  applicationId String
+  application   Application  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  type          DocumentType
+  displayName   String
+  optional      Boolean      @default(false)
+  originalName  String?
+  mimeType      String?
+  sizeBytes     Int?
+  storagePath   String?
+  uploadedAt    DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@unique([applicationId, type])
+}
+
+model FeePayment {
+  id            String      @id @default(uuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  academicYear  String
+  paymentDate   DateTime?
+  amount        String
+  modeOfPayment String
+  details       String
+  sortOrder     Int
+
+  @@index([applicationId, sortOrder])
+}
+
+model Declaration {
+  id             String        @id @default(uuid())
+  applicationId  String        @unique
+  application    Application   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  agreed         Boolean       @default(false)
+  declarationDate DateTime?
+  signatureType  SignatureType?
+  signaturePath  String?
+  agreedAt       DateTime?
+  updatedAt      DateTime      @updatedAt
+}
+
+model ApplicationStatusLog {
+  id            String            @id @default(uuid())
+  applicationId String
+  application   Application       @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  status        ApplicationStatus
+  note          String?
+  actorId       String?
+  actor         User?             @relation("ReviewedBy", fields: [actorId], references: [id], onDelete: SetNull)
+  createdAt     DateTime          @default(now())
+
+  @@index([applicationId, createdAt])
+}

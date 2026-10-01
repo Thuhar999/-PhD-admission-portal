@@ -11,12 +11,14 @@ export function Submitted() {
   const [app, setApp] = useState<Application | null>(null)
 
   useEffect(() => {
-    const data = loadDraft()
-    if (!data || data.status !== 'submitted') {
-      navigate('/phd-admission')
-      return
-    }
-    setApp(data)
+    void (async () => {
+      const data = await loadDraft()
+      if (!data || data.status !== 'submitted') {
+        navigate('/phd-admission')
+        return
+      }
+      setApp(data)
+    })()
   }, [navigate])
 
   if (!app) return null

@@ -1,31 +1,52 @@
 import type { Application, ScholarDetails, SupervisorDetails, CoSupervisorDetails } from '@/types/application'
-import { REQUIRED_DOCUMENTS, STORAGE_KEY, AUTH_KEY } from '@/data/departments'
+import { AUTH_KEY } from '@/data/departments'
+import { createApplication, getApplication, getMyApplications, saveApplication } from '@/services/api'
+
+const APPLICATION_ID_KEY = 'phd_admission_current_application_id'
 
 // ─── Storage ─────────────────────────────────────────────────────────────────
-export function saveDraft(app: Application): void {
-  app.updatedAt = new Date().toISOString()
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(app))
+export async function saveDraft(app: Application): Promise<Application> {
+  const saved = await saveApplication(app)
+  localStorage.setItem(APPLICATION_ID_KEY, saved.id)
+  return saved
 }
 
-export function loadDraft(): Application | null {
+export async function loadDraft(): Promise<Application | null> {
+  if (!getAuth()?.accessToken) return null
+
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as Application) : null
+    const applicationId = localStorage.getItem(APPLICATION_ID_KEY)
+    if (applicationId) return await getApplication(applicationId)
+
+    const applications = await getMyApplications()
+    const application = applications.find((item) => item.status === 'draft') ?? applications[0] ?? null
+    if (application) localStorage.setItem(APPLICATION_ID_KEY, application.id)
+    return application
   } catch {
     return null
   }
 }
 
 export function clearDraft(): void {
-  localStorage.removeItem(STORAGE_KEY)
+  localStorage.removeItem(APPLICATION_ID_KEY)
+}
+
+export function saveCurrentApplication(application: Application): void {
+  localStorage.setItem(APPLICATION_ID_KEY, application.id)
+}
+
+export async function createServerApplication(selectedProgramme: Application['selectedProgramme']): Promise<Application> {
+  const application = await createApplication(selectedProgramme)
+  saveCurrentApplication(application)
+  return application
 }
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
-export function saveAuth(email: string): void {
-  localStorage.setItem(AUTH_KEY, JSON.stringify({ email, loggedIn: true }))
+export function saveAuth(email: string, accessToken: string, role: string): void {
+  localStorage.setItem(AUTH_KEY, JSON.stringify({ email, loggedIn: true, accessToken, role }))
 }
 
-export function getAuth(): { email: string; loggedIn: boolean } | null {
+export function getAuth(): { email: string; loggedIn: boolean; accessToken?: string; role?: string } | null {
   try {
     const raw = localStorage.getItem(AUTH_KEY)
     return raw ? JSON.parse(raw) : null
@@ -34,49 +55,7 @@ export function getAuth(): { email: string; loggedIn: boolean } | null {
 
 export function clearAuth(): void {
   localStorage.removeItem(AUTH_KEY)
-}
-
-// ─── Application Number ───────────────────────────────────────────────────────
-export function generateAppNumber(programme: string): string {
-  const code = programme.toUpperCase().replace(/\s/g, '')
-  const year = new Date().getFullYear()
-  const rand = Math.floor(1000 + Math.random() * 9000)
-  return `PHD${code}${year}${rand}`
-}
-
-// ─── Default Application ──────────────────────────────────────────────────────
-export function createDefaultApplication(): Application {
-  return {
-    id: crypto.randomUUID(),
-    applicationNumber: '',
-    selectedProgramme: 'CSE',
-    status: 'draft',
-    photograph: undefined,
-    scholar: {
-      name: '', email: '', contactNumber: '', whatsapp: '',
-      proposedResearchTopic: '', profession: '', fatherGuardianSpouseName: '',
-      alternateNumber: '', studyMode: '', addressForCommunication: '',
-    },
-    supervisor: {
-      name: '', email: '', contactNumber: '', whatsapp: '',
-      profession: '', addressOfInstitution: '', addressForCommunication: '',
-    },
-    coSupervisor: {
-      hasCoSupervisor: false,
-      name: '', email: '', contactNumber: '', whatsapp: '',
-      profession: '', addressOfInstitution: '', addressForCommunication: '',
-    },
-    qualifications: [
-      { id: '1', degree: '', university: '', percentage: '' },
-      { id: '2', degree: '', university: '', percentage: '' },
-    ],
-    documents: REQUIRED_DOCUMENTS.map(d => ({ ...d, status: 'pending' as const })),
-    feePayments: [{ id: '1', academicYear: '', date: '', amount: '', modeOfPayment: '', details: '' }],
-    declaration: { agreed: false, date: '' },
-    signature: { type: 'none' },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  }
+  clearDraft()
 }
 
 // ─── Validation ───────────────────────────────────────────────────────────────

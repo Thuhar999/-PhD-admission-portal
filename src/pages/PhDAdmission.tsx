@@ -4,42 +4,59 @@ import { ArrowRight, CheckCircle2, RotateCcw, Sparkles } from 'lucide-react'
 import { Navbar } from '@/components/Navbar'
 import { Footer } from '@/components/Footer'
 import { DEPARTMENTS } from '@/data/departments'
-import type { Programme } from '@/types/application'
-import { loadDraft, createDefaultApplication, saveDraft } from '@/utils/storage'
+import type { Application, Programme } from '@/types/application'
+import { createServerApplication, loadDraft, saveDraft } from '@/utils/storage'
 
 export function PhDAdmission() {
   const [selectedProgramme, setSelectedProgramme] = useState<Programme | null>(null)
   const [existingDraft, setExistingDraft] = useState<boolean>(false)
+  const [draft, setDraft] = useState<Application | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const navigate = useNavigate()
 
   useEffect(() => {
-    const draft = loadDraft()
-    if (draft) {
-      setExistingDraft(true)
-      setSelectedProgramme(draft.selectedProgramme)
-    }
+    void (async () => {
+      const application = await loadDraft()
+      if (application?.status === 'draft') {
+        setDraft(application)
+        setExistingDraft(true)
+        setSelectedProgramme(application.selectedProgramme)
+      }
+      setLoading(false)
+    })()
   }, [])
 
-  const handleStart = () => {
+  const handleStart = async () => {
     if (!selectedProgramme) return
-    const draft = loadDraft()
-    if (draft) {
-      draft.selectedProgramme = selectedProgramme
-      saveDraft(draft)
-    } else {
-      const newApp = createDefaultApplication()
-      newApp.selectedProgramme = selectedProgramme
-      saveDraft(newApp)
+    setError('')
+    setLoading(true)
+    try {
+      if (draft) {
+        await saveDraft({ ...draft, selectedProgramme })
+      } else {
+        await createServerApplication(selectedProgramme)
+      }
+      navigate('/application')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not create the application draft.')
+    } finally {
+      setLoading(false)
     }
-    navigate('/application')
   }
 
-  const handleStartFresh = () => {
+  const handleStartFresh = async () => {
     if (!selectedProgramme) return
-    const newApp = createDefaultApplication()
-    newApp.selectedProgramme = selectedProgramme
-    saveDraft(newApp)
-    navigate('/application')
+    setError('')
+    setLoading(true)
+    try {
+      await createServerApplication(selectedProgramme)
+      navigate('/application')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not create a new application.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -75,16 +92,22 @@ export function PhDAdmission() {
               <div>
                 <p className="text-xs font-bold text-amber-900">Incomplete Draft Found</p>
                 <p className="text-xs text-amber-700">
-                  You have an unfinished application saved in this browser. You can resume or select a different department.
+                  You have an unfinished application saved on the admissions server. You can resume or select a different department.
                 </p>
               </div>
             </div>
             <button
-              onClick={handleStartFresh}
+              onClick={() => void handleStartFresh()}
               className="text-xs font-semibold text-amber-800 hover:text-amber-950 underline px-2 py-1"
             >
               Reset & Start New
             </button>
+          </div>
+        )}
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700">
+            {error}
           </div>
         )}
 
@@ -168,8 +191,8 @@ export function PhDAdmission() {
 
           <button
             type="button"
-            disabled={!selectedProgramme}
-            onClick={handleStart}
+            disabled={!selectedProgramme || loading}
+            onClick={() => void handleStart()}
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-primary-700 hover:bg-primary-800 text-white font-semibold text-sm rounded-xl transition-all shadow-md hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-primary-700 disabled:shadow-none flex-shrink-0"
           >
             <span>START APPLICATION</span>

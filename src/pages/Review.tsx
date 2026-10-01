@@ -5,7 +5,8 @@ import { Navbar } from '@/components/Navbar'
 import { Footer } from '@/components/Footer'
 import { ApplicationDocument } from '@/components/ApplicationDocument'
 import type { Application } from '@/types/application'
-import { loadDraft, saveDraft, generateAppNumber } from '@/utils/storage'
+import { loadDraft } from '@/utils/storage'
+import { submitApplication } from '@/services/api'
 
 export function Review() {
   const navigate = useNavigate()
@@ -14,33 +15,29 @@ export function Review() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
-    const draft = loadDraft()
-    if (!draft || !draft.selectedProgramme) {
-      navigate('/phd-admission')
-      return
-    }
-    setApp(draft)
+    void (async () => {
+      const draft = await loadDraft()
+      if (!draft || !draft.selectedProgramme || draft.status !== 'draft') {
+        navigate('/phd-admission')
+        return
+      }
+      setApp(draft)
+    })()
   }, [navigate])
 
-  const handleConfirmSubmit = () => {
+  const handleConfirmSubmit = async () => {
     if (!app) return
     setIsSubmitting(true)
-
-    setTimeout(() => {
-      const appNumber = generateAppNumber(app.selectedProgramme)
-      const submittedApp: Application = {
-        ...app,
-        applicationNumber: appNumber,
-        status: 'submitted',
-        submittedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }
-
-      saveDraft(submittedApp)
+    try {
+      await submitApplication(app.id)
       setIsSubmitting(false)
       setShowConfirmModal(false)
       navigate('/submitted')
-    }, 600)
+    } catch (err) {
+      setIsSubmitting(false)
+      setShowConfirmModal(false)
+      alert(err instanceof Error ? err.message : 'Could not submit the application.')
+    }
   }
 
   if (!app) return null
@@ -131,7 +128,7 @@ export function Review() {
               <button
                 type="button"
                 disabled={isSubmitting}
-                onClick={handleConfirmSubmit}
+                onClick={() => void handleConfirmSubmit()}
                 className="flex items-center gap-2 px-5 py-2 bg-primary-700 hover:bg-primary-800 text-white rounded-lg text-xs font-semibold transition-colors shadow-sm disabled:opacity-50"
               >
                 {isSubmitting ? (

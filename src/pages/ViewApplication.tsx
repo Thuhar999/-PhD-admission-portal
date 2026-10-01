@@ -12,19 +12,21 @@ export function ViewApplication() {
   const [app, setApp] = useState<Application | null>(null)
 
   useEffect(() => {
-    const data = loadDraft()
-    if (!data) {
-      navigate('/phd-admission')
-      return
-    }
-    setApp(data)
+    void (async () => {
+      const data = await loadDraft()
+      if (!data) {
+        navigate('/phd-admission')
+        return
+      }
+      setApp(data)
 
-    // Trigger print dialog if directed with ?print=true
-    if (searchParams.get('print') === 'true') {
-      setTimeout(() => {
-        window.print()
-      }, 500)
-    }
+      // Trigger print dialog if directed with ?print=true
+      if (searchParams.get('print') === 'true') {
+        setTimeout(() => {
+          window.print()
+        }, 500)
+      }
+    })()
   }, [navigate, searchParams])
 
   const handlePrint = () => {

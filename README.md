@@ -1,4 +1,8 @@
-# React + TypeScript + Vite
+# Sahyadri Ph.D. Admission Portal
+
+The browser interface is a React + TypeScript + Vite app. Its production-ready NestJS/PostgreSQL API is in [backend/README.md](backend/README.md), including database setup, authentication, document-upload, submission, and staff-review instructions.
+
+## Frontend development
 
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 

@@ -5,6 +5,7 @@ import {
   ShieldCheck, Sparkles
 } from 'lucide-react'
 import { saveAuth } from '@/utils/storage'
+import { ApiError, authApi } from '@/services/api'
 
 export function Login() {
   const [email, setEmail] = useState('')
@@ -15,26 +16,51 @@ export function Login() {
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault()
+  const validateCredentials = () => {
     setError('')
 
     if (!email.trim() || !password.trim()) {
       setError('Please enter both email and password.')
-      return
+      return false
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setError('Please enter a valid email address.')
-      return
+      return false
     }
+    return true
+  }
 
+  const saveSessionAndContinue = (result: { accessToken: string; user: { email: string; role: string } }) => {
+    saveAuth(result.user.email, result.accessToken, result.user.role)
+    navigate('/phd-admission')
+  }
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!validateCredentials()) return
     setLoading(true)
-    setTimeout(() => {
-      saveAuth(email)
+    try {
+      saveSessionAndContinue(await authApi.login(email, password))
+    } catch (err) {
+      setError(err instanceof ApiError && err.status === 401
+        ? 'No account matches these credentials. Create an applicant account first.'
+        : err instanceof Error ? err.message : 'Could not sign in. Is the backend running?')
+    } finally {
       setLoading(false)
-      navigate('/phd-admission')
-    }, 400)
+    }
+  }
+
+  const handleRegister = async () => {
+    if (!validateCredentials()) return
+    setLoading(true)
+    try {
+      saveSessionAndContinue(await authApi.register(email, password))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not create the account.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const fillDemo = () => {
@@ -166,15 +192,15 @@ export function Login() {
               {/* Demo Credentials Auto-Fill Box */}
               <div className="bg-primary-50/80 border border-primary-200/80 rounded-xl p-3 mb-5 text-xs text-primary-900 flex items-center justify-between">
                 <div>
-                  <span className="font-bold text-primary-800 block">Quick Demo Login:</span>
-                  <span className="text-[11px] text-gray-600">Click to fill credentials</span>
+                  <span className="font-bold text-primary-800 block">New applicant?</span>
+                  <span className="text-[11px] text-gray-600">Use an example, then create your account</span>
                 </div>
                 <button
                   type="button"
                   onClick={fillDemo}
                   className="px-2.5 py-1 bg-primary-700 hover:bg-primary-800 text-white text-xs font-semibold rounded-md transition-colors shadow-xs cursor-pointer"
                 >
-                  Auto-fill
+                  Use example
                 </button>
               </div>
 
@@ -234,7 +260,7 @@ export function Login() {
                   </label>
                   <button
                     type="button"
-                    onClick={() => alert('For this demo, any valid email & password can be entered or click Auto-fill!')}
+                    onClick={() => alert('Use “Create Applicant Account” if you have not registered yet.')}
                     className="font-semibold text-primary-700 hover:underline"
                   >
                     Forgot password?
@@ -254,6 +280,15 @@ export function Login() {
                       Sign In to Ph.D. Portal
                     </>
                   )}
+                </button>
+
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => void handleRegister()}
+                  className="w-full py-2.5 px-4 border border-primary-700 text-primary-700 hover:bg-primary-50 font-semibold text-xs rounded-xl transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  CREATE APPLICANT ACCOUNT
                 </button>
               </form>
 

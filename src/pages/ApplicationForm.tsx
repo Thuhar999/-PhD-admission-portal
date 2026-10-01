@@ -18,7 +18,6 @@ import type { Application, FormStep } from '@/types/application'
 import {
   loadDraft,
   saveDraft,
-  createDefaultApplication,
   validateScholar,
   validateSupervisor,
   formatTime,
@@ -27,41 +26,56 @@ import {
 
 export function ApplicationForm() {
   const navigate = useNavigate()
-  const [app, setApp] = useState<Application>(() => {
-    return loadDraft() || createDefaultApplication()
-  })
+  const [app, setApp] = useState<Application | null>(null)
   const [currentStep, setCurrentStep] = useState<FormStep>(1)
   const [errors, setErrors] = useState<ValidationErrors>({})
   const [lastSaved, setLastSaved] = useState<string>('just now')
   const [showSaveToast, setShowSaveToast] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   // Ensure user has an application/programme selected
   useEffect(() => {
-    const existing = loadDraft()
-    if (!existing || !existing.selectedProgramme) {
-      navigate('/phd-admission')
-    }
+    void (async () => {
+      const existing = await loadDraft()
+      if (!existing || !existing.selectedProgramme || existing.status !== 'draft') {
+        navigate('/phd-admission')
+        return
+      }
+      setApp(existing)
+      setCurrentStep(Math.min(7, Math.max(1, existing.currentStep ?? 1)) as FormStep)
+    })()
   }, [navigate])
 
   // Update last saved text
   useEffect(() => {
+    if (!app) return
     const interval = setInterval(() => {
       setLastSaved(formatTime(app.updatedAt))
     }, 15000)
     return () => clearInterval(interval)
-  }, [app.updatedAt])
+  }, [app])
 
-  const handleSaveDraft = (silent = false) => {
-    saveDraft(app)
-    setLastSaved('just now')
-    if (!silent) {
-      setShowSaveToast(true)
-      setTimeout(() => setShowSaveToast(false), 2500)
+  const handleSaveDraft = async (silent = false, application = app, step = currentStep) => {
+    if (!application) return false
+    setSaveError('')
+    try {
+      const saved = await saveDraft({ ...application, currentStep: step })
+      setApp(saved)
+      setLastSaved('just now')
+      if (!silent) {
+        setShowSaveToast(true)
+        setTimeout(() => setShowSaveToast(false), 2500)
+      }
+      return true
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Could not save your draft to the server.')
+      return false
     }
   }
 
   // Step Validation
   const validateCurrentStep = (): boolean => {
+    if (!app) return false
     setErrors({})
     if (currentStep === 1) {
       const errs = validateScholar(app.scholar)
@@ -98,14 +112,15 @@ export function ApplicationForm() {
     return true
   }
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!validateCurrentStep()) {
       window.scrollTo({ top: 150, behavior: 'smooth' })
       return
     }
-    handleSaveDraft(true)
+    const nextStep = currentStep < 7 ? (currentStep + 1) as FormStep : currentStep
+    if (!(await handleSaveDraft(true, app, nextStep))) return
     if (currentStep < 7) {
-      setCurrentStep((prev) => (prev + 1) as FormStep)
+      setCurrentStep(nextStep)
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } else {
       // Proceed to review page
@@ -118,6 +133,14 @@ export function ApplicationForm() {
       setCurrentStep((prev) => (prev - 1) as FormStep)
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
+  }
+
+  if (!app) {
+    return (
+      <div className="min-h-screen flex items-center justify-center font-poppins bg-[#f8f9f6] text-sm text-gray-600">
+        Loading your application from the server…
+      </div>
+    )
   }
 
   return (
@@ -138,7 +161,7 @@ export function ApplicationForm() {
                 onChange={photo => {
                   const updated = { ...app, photograph: photo }
                   setApp(updated)
-                  saveDraft(updated)
+                  void handleSaveDraft(true, updated)
                 }}
               />
             </div>
@@ -161,6 +184,12 @@ export function ApplicationForm() {
         {showSaveToast && (
           <div className="fixed bottom-6 right-6 z-50 bg-primary-800 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-xl flex items-center gap-2 border border-primary-700 animate-bounce">
             <span>✓ Draft Saved Successfully</span>
+          </div>
+        )}
+
+        {saveError && (
+          <div className="mb-6 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg">
+            {saveError}
           </div>
         )}
 
@@ -255,7 +284,7 @@ export function ApplicationForm() {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => handleSaveDraft(false)}
+              onClick={() => void handleSaveDraft(false)}
               className="flex items-center gap-1.5 px-4 py-2 border border-primary-700 text-primary-700 rounded-lg text-xs font-semibold hover:bg-primary-50 transition-colors"
             >
               <Save size={14} /> SAVE DRAFT
@@ -264,7 +293,7 @@ export function ApplicationForm() {
             {currentStep < 7 ? (
               <button
                 type="button"
-                onClick={handleNext}
+                onClick={() => void handleNext()}
                 className="flex items-center gap-1.5 px-6 py-2 bg-primary-700 hover:bg-primary-800 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
               >
                 NEXT <ArrowRight size={14} />
@@ -272,7 +301,7 @@ export function ApplicationForm() {
             ) : (
               <button
                 type="button"
-                onClick={handleNext}
+                onClick={() => void handleNext()}
                 className="flex items-center gap-1.5 px-6 py-2 bg-maroon-700 hover:bg-maroon-800 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
               >
                 <Eye size={14} /> REVIEW APPLICATION
