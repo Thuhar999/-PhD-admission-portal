@@ -29,7 +29,10 @@ export async function loadDraft(): Promise<Application | null> {
 
 export function clearDraft(): void {
   localStorage.removeItem(APPLICATION_ID_KEY)
+  localStorage.removeItem('phd_admission_draft')
 }
+
+export { createDefaultApplication, generateAppNumber, getMyApplications } from '@/services/api'
 
 export function saveCurrentApplication(application: Application): void {
   localStorage.setItem(APPLICATION_ID_KEY, application.id)
