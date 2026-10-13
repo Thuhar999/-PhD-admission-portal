@@ -4,10 +4,11 @@ import type { CoSupervisorDetails } from '@/types/application'
 interface Props {
   data: CoSupervisorDetails
   onChange: (data: CoSupervisorDetails) => void
+  errors?: Record<string, string>
   readOnly?: boolean
 }
 
-export function CoSupervisorDetailsStep({ data, onChange, readOnly }: Props) {
+export function CoSupervisorDetailsStep({ data, onChange, errors = {}, readOnly }: Props) {
   const set = (key: keyof CoSupervisorDetails) => (val: string | boolean) =>
     onChange({ ...data, [key]: val })
 
@@ -50,7 +51,7 @@ export function CoSupervisorDetailsStep({ data, onChange, readOnly }: Props) {
         {/* Co-supervisor fields if YES */}
         {data.hasCoSupervisor ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-gray-100">
-            <Field label="Name of Co-Supervisor" className="md:col-span-2">
+            <Field label="Name of Co-Supervisor" required error={errors.coSupervisorName} className="md:col-span-2">
               <Input
                 value={data.name}
                 onChange={set('name')}
@@ -59,7 +60,7 @@ export function CoSupervisorDetailsStep({ data, onChange, readOnly }: Props) {
               />
             </Field>
 
-            <Field label="Email ID">
+            <Field label="Email ID" required error={errors.coSupervisorEmail}>
               <Input
                 value={data.email}
                 onChange={set('email')}
@@ -69,7 +70,7 @@ export function CoSupervisorDetailsStep({ data, onChange, readOnly }: Props) {
               />
             </Field>
 
-            <Field label="Contact Number">
+            <Field label="Contact Number" required error={errors.coSupervisorContactNumber}>
               <Input
                 value={data.contactNumber}
                 onChange={set('contactNumber')}
@@ -89,7 +90,7 @@ export function CoSupervisorDetailsStep({ data, onChange, readOnly }: Props) {
               />
             </Field>
 
-            <Field label="Profession / Designation">
+            <Field label="Profession / Designation" required error={errors.coSupervisorProfession}>
               <Input
                 value={data.profession}
                 onChange={set('profession')}
@@ -98,7 +99,7 @@ export function CoSupervisorDetailsStep({ data, onChange, readOnly }: Props) {
               />
             </Field>
 
-            <Field label="Address of the Institution" className="md:col-span-2">
+            <Field label="Address of the Institution" required error={errors.coSupervisorAddressOfInstitution} className="md:col-span-2">
               <Textarea
                 value={data.addressOfInstitution}
                 onChange={set('addressOfInstitution')}

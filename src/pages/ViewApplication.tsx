@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
-import { Printer, ArrowLeft, Download, CheckCircle2 } from 'lucide-react'
+import { Printer, ArrowLeft } from 'lucide-react'
 import { Navbar } from '@/components/Navbar'
 import { ApplicationDocument } from '@/components/ApplicationDocument'
 import type { Application } from '@/types/application'

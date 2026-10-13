@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, InternalServerErrorException, OnModule
 import { Express } from 'express'
 import { mkdir, unlink, writeFile } from 'node:fs/promises'
 import { createReadStream, existsSync } from 'node:fs'
-import { basename, extname, resolve } from 'node:path'
+import { basename, extname, resolve, sep } from 'node:path'
 import { randomUUID } from 'node:crypto'
 
 export type UploadPurpose = 'photo' | 'signature' | 'document'
@@ -62,7 +62,7 @@ export class FileStorageService implements OnModuleInit {
 
   private absolutePath(storagePath: string) {
     const absolutePath = resolve(this.root, storagePath)
-    if (!absolutePath.startsWith(`${this.root}/`) && absolutePath !== this.root) {
+    if (!absolutePath.startsWith(`${this.root}${sep}`) && absolutePath !== this.root) {
       throw new BadRequestException('Invalid file path.')
     }
     return absolutePath

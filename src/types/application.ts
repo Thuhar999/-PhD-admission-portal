@@ -55,6 +55,7 @@ export interface DocumentInfo {
   fileName?: string
   fileData?: string  // base64
   status: 'pending' | 'uploaded'
+  downloadUrl?: string | null
 }
 
 export interface FeePayment {
@@ -94,6 +95,15 @@ export interface Application {
   createdAt: string
   updatedAt: string
   submittedAt?: string
+  workflowStatus?: string
+  reviewerNote?: string
+  statusHistory?: Array<{
+    id: string
+    status: string
+    note?: string | null
+    createdAt: string
+    actor?: { id: string; email: string; role: string } | null
+  }>
 }
 
 // Form step type

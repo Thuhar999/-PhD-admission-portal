@@ -1,7 +1,7 @@
 import type { Application, DocumentInfo, Programme, Signature } from '@/types/application'
 import { REQUIRED_DOCUMENTS } from '@/data/departments'
 
-const API_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api').replace(/\/$/, '')
+const API_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api').replace(/\/$/, '')
 const AUTH_KEY = 'phd_admission_auth'
 const LOCAL_STORAGE_APP_KEY = 'phd_admission_draft'
 const APPLICATION_ID_KEY = 'phd_admission_current_application_id'
@@ -49,14 +49,19 @@ function url(path: string) {
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = accessToken()
-  const response = await fetch(url(path), {
-    ...options,
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
-      ...options.headers,
-    },
-  })
+  let response: Response
+  try {
+    response = await fetch(url(path), {
+      ...options,
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+        ...options.headers,
+      },
+    })
+  } catch {
+    throw new ApiError('Unable to connect to the Ph.D. Admission API. Please ensure the backend server is running.', 0)
+  }
 
   if (!response.ok) {
     const body = await response.json().catch(() => null) as { message?: string | string[] } | null
@@ -201,7 +206,7 @@ async function normaliseApplication(application: ServerApplication): Promise<App
     currentStep: Math.min(8, Math.max(1, application.currentStep)) as Application['currentStep'],
     photograph: photograph ?? (application as unknown as Application).photograph,
     signature: toSignature(application.signature.type, signatureData ?? (application.signature as unknown as Signature).data),
-    documents: application.documents.map(({ downloadUrl: _downloadUrl, ...document }) => document),
+    documents: application.documents.map((document) => ({ ...document })),
   }
 }
 
@@ -260,32 +265,14 @@ async function synchroniseFiles(application: Application, server: ServerApplicat
 
 export const authApi = {
   login: async (email: string, password: string): Promise<AuthResponse> => {
-    try {
-      return await request<AuthResponse>('/auth/login', {
-        method: 'POST', body: JSON.stringify({ email, password }),
-      })
-    } catch (err) {
-      if (err instanceof ApiError) throw err
-      console.info('[PhD Portal] Backend server offline. Activated demo/offline session.')
-      return {
-        accessToken: 'offline-demo-token',
-        user: { id: 'demo-user-1', email, role: 'APPLICANT' },
-      }
-    }
+    return request<AuthResponse>('/auth/login', {
+      method: 'POST', body: JSON.stringify({ email, password }),
+    })
   },
   register: async (email: string, password: string): Promise<AuthResponse> => {
-    try {
-      return await request<AuthResponse>('/auth/register', {
-        method: 'POST', body: JSON.stringify({ email, password }),
-      })
-    } catch (err) {
-      if (err instanceof ApiError) throw err
-      console.info('[PhD Portal] Backend server offline. Registered demo/offline applicant.')
-      return {
-        accessToken: 'offline-demo-token',
-        user: { id: 'demo-user-1', email, role: 'APPLICANT' },
-      }
-    }
+    return request<AuthResponse>('/auth/register', {
+      method: 'POST', body: JSON.stringify({ email, password }),
+    })
   },
 }
 
@@ -359,4 +346,44 @@ export async function submitApplication(applicationId: string): Promise<Applicat
     saveLocalDraft(target)
     return target
   }
+}
+
+export async function getReviewApplications(filters?: { status?: string; programme?: string }): Promise<Application[]> {
+  const params = new URLSearchParams()
+  if (filters?.status) params.set('status', filters.status)
+  if (filters?.programme) params.set('programme', filters.programme)
+  const qs = params.toString() ? `?${params.toString()}` : ''
+  const applications = await request<ServerApplication[]>(`/applications/review${qs}`)
+  return Promise.all(applications.map(normaliseApplication))
+}
+
+export async function updateApplicationStatus(
+  applicationId: string,
+  status: string,
+  note?: string,
+): Promise<Application> {
+  const updated = await request<ServerApplication>(`/applications/${applicationId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status, note }),
+  })
+  return normaliseApplication(updated)
+}
+
+export async function downloadDocumentWithAuth(downloadPath: string, filename: string): Promise<void> {
+  const token = accessToken()
+  const response = await fetch(url(downloadPath), {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
+  if (!response.ok) {
+    throw new ApiError('Failed to download document.', response.status)
+  }
+  const blob = await response.blob()
+  const objectUrl = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = objectUrl
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(objectUrl)
 }

@@ -20,6 +20,8 @@ import {
   saveDraft,
   validateScholar,
   validateSupervisor,
+  validateCoSupervisor,
+  validateQualifications,
   formatTime,
   type ValidationErrors,
 } from '@/utils/storage'
@@ -88,6 +90,20 @@ export function ApplicationForm() {
       const errs = validateSupervisor(app.supervisor)
       if (Object.keys(errs).length > 0) {
         setErrors(errs)
+        return false
+      }
+    }
+    if (currentStep === 3) {
+      const errs = validateCoSupervisor(app.coSupervisor)
+      if (Object.keys(errs).length > 0) {
+        setErrors(errs)
+        return false
+      }
+    }
+    if (currentStep === 4) {
+      const err = validateQualifications(app.qualifications)
+      if (err) {
+        setErrors({ qualifications: err })
         return false
       }
     }
@@ -215,14 +231,22 @@ export function ApplicationForm() {
             <CoSupervisorDetailsStep
               data={app.coSupervisor}
               onChange={coSupervisor => setApp({ ...app, coSupervisor })}
+              errors={errors}
             />
           )}
 
           {currentStep === 4 && (
-            <QualificationTableStep
-              data={app.qualifications}
-              onChange={qualifications => setApp({ ...app, qualifications })}
-            />
+            <div className="space-y-3">
+              <QualificationTableStep
+                data={app.qualifications}
+                onChange={qualifications => setApp({ ...app, qualifications })}
+              />
+              {errors.qualifications && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg">
+                  {errors.qualifications}
+                </div>
+              )}
+            </div>
           )}
 
           {currentStep === 5 && (

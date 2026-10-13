@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowRight, CheckCircle2, RotateCcw, Sparkles, FileText,
-  Printer, Hash, Calendar, User, BookOpen, Clock, PlusCircle
+  Printer, Hash, Calendar, User, BookOpen, Clock, PlusCircle,
+  AlertTriangle, XCircle, MessageSquare
 } from 'lucide-react'
 import { Navbar } from '@/components/Navbar'
 import { Footer } from '@/components/Footer'
@@ -162,10 +163,47 @@ export function PhDAdmission() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-800 font-bold text-xs rounded-full border border-green-200">
-                        <CheckCircle2 size={13} />
-                        SUBMITTED • UNDER REVIEW
-                      </span>
+                      {(() => {
+                        const st = (app.workflowStatus || app.status || '').toUpperCase()
+                        if (st === 'APPROVED') {
+                          return (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-800 font-bold text-xs rounded-full border border-green-200">
+                              <CheckCircle2 size={13} />
+                              APPROVED
+                            </span>
+                          )
+                        }
+                        if (st === 'REJECTED') {
+                          return (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-800 font-bold text-xs rounded-full border border-red-200">
+                              <XCircle size={13} />
+                              REJECTED
+                            </span>
+                          )
+                        }
+                        if (st === 'NEEDS_INFORMATION') {
+                          return (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-900 font-bold text-xs rounded-full border border-amber-300 animate-pulse">
+                              <AlertTriangle size={13} />
+                              ACTION REQUIRED: NEEDS INFORMATION
+                            </span>
+                          )
+                        }
+                        if (st === 'UNDER_REVIEW') {
+                          return (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-800 font-bold text-xs rounded-full border border-blue-200">
+                              <Clock size={13} />
+                              UNDER REVIEW
+                            </span>
+                          )
+                        }
+                        return (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-800 font-bold text-xs rounded-full border border-emerald-200">
+                            <CheckCircle2 size={13} />
+                            SUBMITTED
+                          </span>
+                        )
+                      })()}
                     </div>
                   </div>
 
@@ -211,6 +249,21 @@ export function PhDAdmission() {
                       <p className="font-medium text-gray-800 italic">
                         "{app.scholar.proposedResearchTopic}"
                       </p>
+                    </div>
+                  )}
+
+                  {/* Latest Reviewer Note if available */}
+                  {app.statusHistory && app.statusHistory.length > 0 && app.statusHistory[0].note && (
+                    <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl text-xs flex items-start gap-2.5">
+                      <MessageSquare size={15} className="text-amber-700 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold text-amber-900 text-[11px] block">
+                          Reviewer Remarks ({formatDate(app.statusHistory[0].createdAt)}):
+                        </span>
+                        <p className="text-amber-800 font-medium mt-0.5">
+                          {app.statusHistory[0].note}
+                        </p>
+                      </div>
                     </div>
                   )}
 

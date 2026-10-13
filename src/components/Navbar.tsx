@@ -20,21 +20,26 @@ export function Navbar({ draftSavedTime, applicationNumber }: Props) {
     <header className="app-nav bg-white border-b border-gray-200 sticky top-0 z-40 shadow-xs no-print">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         {/* Left: Branding */}
-        <Link to={auth ? "/phd-admission" : "/"} className="flex items-center gap-3">
-          <img
-            src="/sahyadri-logo.png"
-            alt="Sahyadri Logo"
-            className="h-11 w-auto object-contain"
-          />
-          <div>
-            <div className="font-bold text-primary-800 text-sm leading-tight tracking-wider">
-              SAHYADRI
-            </div>
-            <div className="text-[11px] font-semibold text-gray-500 leading-tight">
-              Ph.D. Admission Portal
-            </div>
-          </div>
-        </Link>
+        {(() => {
+          const isStaff = auth?.role === 'ADMIN' || auth?.role === 'REVIEWER'
+          return (
+            <Link to={isStaff ? "/admin" : auth ? "/phd-admission" : "/"} className="flex items-center gap-3">
+              <img
+                src="/sahyadri-logo.png"
+                alt="Sahyadri Logo"
+                className="h-11 w-auto object-contain"
+              />
+              <div>
+                <div className="font-bold text-primary-800 text-sm leading-tight tracking-wider">
+                  SAHYADRI
+                </div>
+                <div className="text-[11px] font-semibold text-gray-500 leading-tight">
+                  Ph.D. Admission Portal {isStaff && <span className="text-amber-700 font-bold">• Staff Review</span>}
+                </div>
+              </div>
+            </Link>
+          )
+        })()}
 
         {/* Right: Info & Actions */}
         <div className="flex items-center gap-4">
@@ -53,12 +58,19 @@ export function Navbar({ draftSavedTime, applicationNumber }: Props) {
 
           {auth ? (
             <div className="flex items-center gap-3">
-              <span className="hidden md:inline-block text-xs font-medium text-gray-600">
-                {auth.email}
-              </span>
+              <div className="flex flex-col items-end">
+                <span className="hidden md:inline-block text-xs font-medium text-gray-700">
+                  {auth.email}
+                </span>
+                {auth.role && auth.role !== 'APPLICANT' && (
+                  <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-1.5 py-0.2 rounded border border-amber-300">
+                    {auth.role}
+                  </span>
+                )}
+              </div>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors border border-gray-200"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors border border-gray-200 cursor-pointer"
               >
                 <LogOut size={14} />
                 <span className="hidden sm:inline">Logout</span>

@@ -15,7 +15,7 @@ import {
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger'
-import { ApplicationStatus, Programme, SignatureType, UserRole } from '@prisma/client'
+import { ApplicationStatus, Programme, UserRole } from '@prisma/client'
 import { Express } from 'express'
 import { CurrentUser } from '../common/decorators/current-user.decorator'
 import { Roles } from '../common/decorators/roles.decorator'

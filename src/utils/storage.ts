@@ -1,4 +1,4 @@
-import type { Application, ScholarDetails, SupervisorDetails, CoSupervisorDetails } from '@/types/application'
+import type { Application, ScholarDetails, SupervisorDetails, CoSupervisorDetails, Qualification } from '@/types/application'
 import { AUTH_KEY } from '@/data/departments'
 import { createApplication, getApplication, getMyApplications, saveApplication } from '@/services/api'
 
@@ -90,6 +90,32 @@ export function validateSupervisor(supervisor: SupervisorDetails): ValidationErr
   if (!supervisor.profession.trim()) errors.profession = 'Profession is required'
   if (!supervisor.addressOfInstitution.trim()) errors.addressOfInstitution = 'Address of institution is required'
   return errors
+}
+
+export function validateCoSupervisor(coSupervisor: CoSupervisorDetails): ValidationErrors {
+  const errors: ValidationErrors = {}
+  if (!coSupervisor.hasCoSupervisor) return errors
+
+  if (!coSupervisor.name.trim()) errors.coSupervisorName = 'Co-Supervisor name is required'
+  if (!coSupervisor.email.trim()) errors.coSupervisorEmail = 'Co-Supervisor email is required'
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(coSupervisor.email)) errors.coSupervisorEmail = 'Enter a valid email address'
+  if (!coSupervisor.contactNumber.trim()) errors.coSupervisorContactNumber = 'Contact number is required'
+  if (!coSupervisor.profession.trim()) errors.coSupervisorProfession = 'Profession / designation is required'
+  if (!coSupervisor.addressOfInstitution.trim()) errors.coSupervisorAddressOfInstitution = 'Address of institution is required'
+  return errors
+}
+
+export function validateQualifications(qualifications: Qualification[]): string | null {
+  if (!qualifications || qualifications.length === 0) {
+    return 'Please enter at least one academic qualification (e.g. UG / PG degree).'
+  }
+  for (let i = 0; i < qualifications.length; i++) {
+    const q = qualifications[i]
+    if (!q.degree.trim() || !q.university.trim() || !q.percentage.trim()) {
+      return `Please fill out Degree, University, and Percentage/CGPA for entry #${i + 1}.`
+    }
+  }
+  return null
 }
 
 export function formatTime(isoString: string): string {

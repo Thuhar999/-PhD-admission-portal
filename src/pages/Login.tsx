@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Eye, EyeOff, LogIn, GraduationCap,
-  ShieldCheck, Sparkles
+  ShieldCheck, Sparkles, KeyRound, Mail, X,
 } from 'lucide-react'
-import { saveAuth } from '@/utils/storage'
+import { saveAuth, getAuth } from '@/utils/storage'
 import { ApiError, authApi } from '@/services/api'
 
 export function Login() {
@@ -13,8 +13,21 @@ export function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(true)
   const [error, setError] = useState('')
+  const [showForgotModal, setShowForgotModal] = useState(false)
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const auth = getAuth()
+    if (auth && auth.loggedIn) {
+      const role = (auth.role || '').toUpperCase()
+      if (role === 'ADMIN' || role === 'REVIEWER') {
+        navigate('/admin', { replace: true })
+      } else {
+        navigate('/phd-admission', { replace: true })
+      }
+    }
+  }, [navigate])
 
   const validateCredentials = () => {
     setError('')
@@ -33,7 +46,12 @@ export function Login() {
 
   const saveSessionAndContinue = (result: { accessToken: string; user: { email: string; role: string } }) => {
     saveAuth(result.user.email, result.accessToken, result.user.role)
-    navigate('/phd-admission')
+    const role = (result.user.role || '').toUpperCase()
+    if (role === 'ADMIN' || role === 'REVIEWER') {
+      navigate('/admin')
+    } else {
+      navigate('/phd-admission')
+    }
   }
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -260,7 +278,7 @@ export function Login() {
                   </label>
                   <button
                     type="button"
-                    onClick={() => alert('Use “Create Applicant Account” if you have not registered yet.')}
+                    onClick={() => setShowForgotModal(true)}
                     className="font-semibold text-primary-700 hover:underline"
                   >
                     Forgot password?
@@ -318,6 +336,67 @@ export function Login() {
           </div>
         </div>
       </footer>
+
+      {/* ── Forgot Password Assistance Modal ── */}
+      {showForgotModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 animate-in fade-in zoom-in-95 duration-150 relative">
+            <button
+              type="button"
+              onClick={() => setShowForgotModal(false)}
+              className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="w-12 h-12 rounded-full bg-primary-50 text-primary-700 flex items-center justify-center mb-4">
+              <KeyRound size={24} />
+            </div>
+
+            <h3 className="text-lg font-bold text-gray-900 mb-1">
+              Account Access & Password Help
+            </h3>
+
+            <p className="text-xs text-gray-500 mb-4">
+              Ph.D. applicant accounts are securely managed by the Sahyadri Research Centre administration.
+            </p>
+
+            <div className="space-y-3 bg-gray-50 border border-gray-100 rounded-xl p-4 text-xs text-gray-700">
+              <div>
+                <span className="font-semibold text-gray-900 block mb-0.5">New Applicant?</span>
+                <p className="text-gray-600">
+                  If you have not registered yet, click <strong>"CREATE APPLICANT ACCOUNT"</strong> on the sign-in form using your preferred email.
+                </p>
+              </div>
+
+              <div className="pt-2 border-t border-gray-200">
+                <span className="font-semibold text-gray-900 block mb-0.5">Need a Password Reset?</span>
+                <p className="text-gray-600 mb-2">
+                  Please contact the Research Centre with your registered email and applicant name:
+                </p>
+                <div>
+                  <a
+                    href="mailto:research@sahyadri.edu.in"
+                    className="inline-flex items-center gap-1.5 text-primary-800 font-semibold hover:underline"
+                  >
+                    <Mail size={13} /> research@sahyadri.edu.in
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowForgotModal(false)}
+                className="px-5 py-2 bg-primary-700 hover:bg-primary-800 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+              >
+                Understood
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

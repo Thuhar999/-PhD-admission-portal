@@ -191,7 +191,7 @@ export class ApplicationsService {
           },
         })
       }
-    })
+    }, { maxWait: 10000, timeout: 30000 })
 
     return this.findOne(user, applicationId)
   }
@@ -332,7 +332,7 @@ export class ApplicationsService {
           await tx.applicationStatusLog.create({
             data: { applicationId, status: ApplicationStatus.SUBMITTED, actorId: user.id, note: 'Application submitted by applicant' },
           })
-        })
+        }, { maxWait: 10000, timeout: 30000 })
         return this.findOne(user, applicationId)
       } catch (error: unknown) {
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') continue

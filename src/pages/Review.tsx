@@ -5,7 +5,7 @@ import { Navbar } from '@/components/Navbar'
 import { Footer } from '@/components/Footer'
 import { ApplicationDocument } from '@/components/ApplicationDocument'
 import type { Application } from '@/types/application'
-import { loadDraft } from '@/utils/storage'
+import { loadDraft, saveCurrentApplication } from '@/utils/storage'
 import { submitApplication } from '@/services/api'
 
 export function Review() {
@@ -29,7 +29,8 @@ export function Review() {
     if (!app) return
     setIsSubmitting(true)
     try {
-      await submitApplication(app.id)
+      const submittedApp = await submitApplication(app.id)
+      saveCurrentApplication(submittedApp)
       setIsSubmitting(false)
       setShowConfirmModal(false)
       navigate('/submitted')

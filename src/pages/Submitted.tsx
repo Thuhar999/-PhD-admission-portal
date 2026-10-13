@@ -13,7 +13,7 @@ export function Submitted() {
   useEffect(() => {
     void (async () => {
       const data = await loadDraft()
-      if (!data || data.status !== 'submitted') {
+      if (!data || data.status === 'draft') {
         navigate('/phd-admission')
         return
       }
@@ -86,12 +86,35 @@ export function Submitted() {
                 <div className="space-y-1">
                   <span className="text-gray-400 font-medium">Application Status</span>
                   <div>
-                    <span className="inline-block px-2.5 py-0.5 bg-green-100 text-green-800 font-bold rounded-full text-[11px]">
-                      SUBMITTED
+                    <span className={`inline-block px-2.5 py-0.5 font-bold rounded-full text-[11px] ${
+                      app.status === 'approved'
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : app.status === 'rejected'
+                        ? 'bg-rose-100 text-rose-800'
+                        : app.status === 'needs_information'
+                        ? 'bg-amber-100 text-amber-800'
+                        : app.status === 'under_review'
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-green-100 text-green-800'
+                    }`}>
+                      {(app.status || 'SUBMITTED').toUpperCase().replace('_', ' ')}
                     </span>
                   </div>
                 </div>
               </div>
+
+              {(() => {
+                const remarks = app.statusHistory?.find(h => h.note)?.note || app.reviewerNote
+                if (!remarks) return null
+                return (
+                  <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl text-left">
+                    <span className="text-xs font-bold text-amber-900 block mb-1">
+                      Institutional Remarks / Required Information:
+                    </span>
+                    <p className="text-xs text-amber-800 leading-relaxed">{remarks}</p>
+                  </div>
+                )
+              })()}
             </div>
 
             {/* Actions */}
