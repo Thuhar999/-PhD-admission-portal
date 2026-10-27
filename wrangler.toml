@@ -1,0 +1,13 @@
+name = "phd-admission-portal"
+pages_build_output_dir = "dist"
+compatibility_date = "2024-09-23"
+
+# Build command: npm run build
+# Set environment variables in the Cloudflare Pages dashboard
+# or via wrangler secret put VITE_API_URL
+
+[env.preview]
+# vars = { VITE_API_URL = "https://your-staging-api.com/api" }
+
+[env.production]
+# vars = { VITE_API_URL = "https://your-production-api.com/api" }

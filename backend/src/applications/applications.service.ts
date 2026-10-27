@@ -364,7 +364,7 @@ export class ApplicationsService {
     const application = await this.getApplication(applicationId)
     this.assertCanAccess(application, user)
     if (!application.photographPath) throw new NotFoundException('No photograph has been uploaded.')
-    return { stream: this.fileStorage.open(application.photographPath), type: this.fileStorage.mimeTypeForPath(application.photographPath) }
+    return { stream: await this.fileStorage.open(application.photographPath), type: this.fileStorage.mimeTypeForPath(application.photographPath) }
   }
 
   async getSignature(user: AuthenticatedUser, applicationId: string) {
@@ -372,7 +372,7 @@ export class ApplicationsService {
     this.assertCanAccess(application, user)
     if (!application.declaration?.signaturePath) throw new NotFoundException('No signature has been uploaded.')
     return {
-      stream: this.fileStorage.open(application.declaration.signaturePath),
+      stream: await this.fileStorage.open(application.declaration.signaturePath),
       type: this.fileStorage.mimeTypeForPath(application.declaration.signaturePath),
     }
   }
@@ -382,7 +382,7 @@ export class ApplicationsService {
     this.assertCanAccess(application, user)
     const document = application.documents.find((item) => item.id === documentId)
     if (!document?.storagePath) throw new NotFoundException('No file has been uploaded for this document.')
-    return { stream: this.fileStorage.open(document.storagePath), document }
+    return { stream: await this.fileStorage.open(document.storagePath), document }
   }
 
   private async getApplication(applicationId: string): Promise<ApplicationRecord> {

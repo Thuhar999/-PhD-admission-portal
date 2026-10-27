@@ -1,56 +1,76 @@
-import { BadRequestException, Injectable, InternalServerErrorException, OnModuleInit } from '@nestjs/common'
+import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { Express } from 'express'
-import { mkdir, unlink, writeFile } from 'node:fs/promises'
-import { createReadStream, existsSync } from 'node:fs'
-import { basename, extname, resolve, sep } from 'node:path'
+import { extname, basename } from 'node:path'
 import { randomUUID } from 'node:crypto'
 
 export type UploadPurpose = 'photo' | 'signature' | 'document'
 
-@Injectable()
-export class FileStorageService implements OnModuleInit {
-  private readonly root = resolve(process.env.UPLOAD_DIR ?? './uploads')
+const BUCKET = 'phd-portal'
 
-  async onModuleInit() {
-    await mkdir(this.root, { recursive: true })
+@Injectable()
+export class FileStorageService {
+  private readonly supabase: SupabaseClient
+  private readonly logger = new Logger(FileStorageService.name)
+
+  constructor(private readonly config: ConfigService) {
+    const url = this.config.getOrThrow<string>('SUPABASE_URL')
+    const key = this.config.getOrThrow<string>('SUPABASE_SERVICE_ROLE_KEY')
+    this.supabase = createClient(url, key, {
+      auth: { persistSession: false },
+    })
   }
 
   async save(applicationId: string, purpose: UploadPurpose, file: Express.Multer.File) {
     this.validate(file, purpose)
-    const extension = extname(file.originalname).toLowerCase() || this.extensionForMime(file.mimetype)
-    const relativePath = `${applicationId}/${purpose}/${randomUUID()}${extension}`
-    const absolutePath = this.absolutePath(relativePath)
 
-    try {
-      await mkdir(resolve(absolutePath, '..'), { recursive: true })
-      await writeFile(absolutePath, file.buffer)
-    } catch {
+    const extension = extname(file.originalname).toLowerCase() || this.extensionForMime(file.mimetype)
+    const storagePath = `${applicationId}/${purpose}/${randomUUID()}${extension}`
+
+    const { error } = await this.supabase.storage
+      .from(BUCKET)
+      .upload(storagePath, file.buffer, {
+        contentType: file.mimetype,
+        upsert: false,
+      })
+
+    if (error) {
+      this.logger.error(`Supabase upload failed: ${error.message}`)
       throw new InternalServerErrorException('Could not store the uploaded file.')
     }
 
     return {
-      storagePath: relativePath,
+      storagePath,
       originalName: basename(file.originalname),
       mimeType: file.mimetype,
       sizeBytes: file.size,
     }
   }
 
-  delete(storagePath?: string | null) {
-    if (!storagePath) return Promise.resolve()
-    const absolutePath = this.absolutePath(storagePath)
-    return unlink(absolutePath).catch((error: NodeJS.ErrnoException) => {
-      if (error.code !== 'ENOENT') throw error
-    })
+  async delete(storagePath?: string | null): Promise<void> {
+    if (!storagePath) return
+    const { error } = await this.supabase.storage.from(BUCKET).remove([storagePath])
+    if (error) {
+      this.logger.warn(`Supabase delete failed for ${storagePath}: ${error.message}`)
+    }
   }
 
-  open(storagePath: string) {
-    const absolutePath = this.absolutePath(storagePath)
-    if (!existsSync(absolutePath)) throw new BadRequestException('The stored file is no longer available.')
-    return createReadStream(absolutePath)
+  async open(storagePath: string): Promise<Buffer> {
+    const { data, error } = await this.supabase.storage
+      .from(BUCKET)
+      .download(storagePath)
+
+    if (error || !data) {
+      this.logger.error(`Supabase download failed for ${storagePath}: ${error?.message}`)
+      throw new BadRequestException('The stored file is no longer available.')
+    }
+
+    const arrayBuffer = await data.arrayBuffer()
+    return Buffer.from(arrayBuffer)
   }
 
-  mimeTypeForPath(storagePath: string) {
+  mimeTypeForPath(storagePath: string): string {
     switch (extname(storagePath).toLowerCase()) {
       case '.png': return 'image/png'
       case '.jpg':
@@ -58,14 +78,6 @@ export class FileStorageService implements OnModuleInit {
       case '.pdf': return 'application/pdf'
       default: return 'application/octet-stream'
     }
-  }
-
-  private absolutePath(storagePath: string) {
-    const absolutePath = resolve(this.root, storagePath)
-    if (!absolutePath.startsWith(`${this.root}${sep}`) && absolutePath !== this.root) {
-      throw new BadRequestException('Invalid file path.')
-    }
-    return absolutePath
   }
 
   private validate(file: Express.Multer.File | undefined, purpose: UploadPurpose) {
@@ -76,12 +88,14 @@ export class FileStorageService implements OnModuleInit {
     const allowed = purpose === 'document' ? [...images, 'application/pdf'] : images
     if (!allowed.includes(file.mimetype)) {
       throw new BadRequestException(
-        purpose === 'document' ? 'Only PDF, JPG, and PNG documents are accepted.' : 'Only JPG and PNG images are accepted.',
+        purpose === 'document'
+          ? 'Only PDF, JPG, and PNG documents are accepted.'
+          : 'Only JPG and PNG images are accepted.',
       )
     }
   }
 
-  private extensionForMime(mimeType: string) {
+  private extensionForMime(mimeType: string): string {
     return mimeType === 'application/pdf' ? '.pdf' : mimeType === 'image/png' ? '.png' : '.jpg'
   }
 }
