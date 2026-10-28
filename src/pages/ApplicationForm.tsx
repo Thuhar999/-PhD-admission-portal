@@ -134,7 +134,7 @@ export function ApplicationForm() {
       return
     }
     const nextStep = currentStep < 7 ? (currentStep + 1) as FormStep : currentStep
-    if (!(await handleSaveDraft(true, app, nextStep))) return
+    void handleSaveDraft(true, app, nextStep)
     if (currentStep < 7) {
       setCurrentStep(nextStep)
       window.scrollTo({ top: 0, behavior: 'smooth' })

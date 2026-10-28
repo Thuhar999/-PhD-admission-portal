@@ -38,7 +38,7 @@ export function ViewApplication() {
 
   const handleDownloadPdf = async () => {
     const element = document.getElementById('application-document')
-    if (!element) return
+    if (!element || !app) return
     setIsGeneratingPdf(true)
     try {
       const canvas = await html2canvas(element, {

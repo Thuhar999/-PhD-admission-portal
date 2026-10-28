@@ -318,8 +318,15 @@ export async function saveApplication(application: Application): Promise<Applica
     const server = await request<ServerApplication>(`/applications/${application.id}`, {
       method: 'PATCH', body: JSON.stringify(draftPayload(application)),
     })
-    await synchroniseFiles(application, server)
-    return await getApplication(application.id)
+    // synchronise files only if needed
+    const hasNewFiles = isDataUrl(application.photograph) ||
+      isDataUrl(application.signature?.data) ||
+      application.documents?.some(d => isDataUrl(d.fileData))
+    if (hasNewFiles) {
+      await synchroniseFiles(application, server)
+      return await getApplication(application.id)
+    }
+    return await normaliseApplication(server)
   } catch (err) {
     if (err instanceof ApiError) throw err
     console.info('[PhD Portal] Backend offline. Draft saved to browser storage.')
