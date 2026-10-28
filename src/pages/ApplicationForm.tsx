@@ -34,6 +34,7 @@ export function ApplicationForm() {
   const [lastSaved, setLastSaved] = useState<string>('just now')
   const [showSaveToast, setShowSaveToast] = useState(false)
   const [saveError, setSaveError] = useState('')
+  const [isNavigatingReview, setIsNavigatingReview] = useState(false)
 
   // Ensure user has an application/programme selected
   useEffect(() => {
@@ -133,14 +134,19 @@ export function ApplicationForm() {
       window.scrollTo({ top: 150, behavior: 'smooth' })
       return
     }
-    const nextStep = currentStep < 7 ? (currentStep + 1) as FormStep : currentStep
-    void handleSaveDraft(true, app, nextStep)
     if (currentStep < 7) {
+      const nextStep = (currentStep + 1) as FormStep
+      void handleSaveDraft(true, app, nextStep)
       setCurrentStep(nextStep)
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } else {
-      // Proceed to review page
-      navigate('/review')
+      // Step 7: Await saving so photograph, signature & declaration are fully uploaded
+      setIsNavigatingReview(true)
+      const success = await handleSaveDraft(true, app, 7)
+      setIsNavigatingReview(false)
+      if (success) {
+        navigate('/review')
+      }
     }
   }
 
@@ -325,10 +331,15 @@ export function ApplicationForm() {
             ) : (
               <button
                 type="button"
+                disabled={isNavigatingReview}
                 onClick={() => void handleNext()}
-                className="flex items-center gap-1.5 px-6 py-2 bg-maroon-700 hover:bg-maroon-800 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
+                className="flex items-center gap-1.5 px-6 py-2 bg-maroon-700 hover:bg-maroon-800 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors disabled:opacity-60"
               >
-                <Eye size={14} /> REVIEW APPLICATION
+                {isNavigatingReview ? (
+                  <>Saving & Preparing Review...</>
+                ) : (
+                  <><Eye size={14} /> REVIEW APPLICATION</>
+                )}
               </button>
             )}
           </div>

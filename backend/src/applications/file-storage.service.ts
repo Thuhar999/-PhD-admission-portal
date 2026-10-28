@@ -7,16 +7,18 @@ import { randomUUID } from 'node:crypto'
 
 export type UploadPurpose = 'photo' | 'signature' | 'document'
 
-const BUCKET = 'phd-portal'
+const DEFAULT_BUCKET = 'phd-portal'
 
 @Injectable()
 export class FileStorageService {
   private readonly supabase: SupabaseClient
   private readonly logger = new Logger(FileStorageService.name)
+  private readonly bucket: string
 
   constructor(private readonly config: ConfigService) {
     const url = this.config.getOrThrow<string>('SUPABASE_URL')
     const key = this.config.getOrThrow<string>('SUPABASE_SERVICE_ROLE_KEY')
+    this.bucket = this.config.get<string>('SUPABASE_BUCKET') || DEFAULT_BUCKET
     this.supabase = createClient(url, key, {
       auth: { persistSession: false },
     })
@@ -29,7 +31,7 @@ export class FileStorageService {
     const storagePath = `${applicationId}/${purpose}/${randomUUID()}${extension}`
 
     const { error } = await this.supabase.storage
-      .from(BUCKET)
+      .from(this.bucket)
       .upload(storagePath, file.buffer, {
         contentType: file.mimetype,
         upsert: false,
@@ -50,7 +52,7 @@ export class FileStorageService {
 
   async delete(storagePath?: string | null): Promise<void> {
     if (!storagePath) return
-    const { error } = await this.supabase.storage.from(BUCKET).remove([storagePath])
+    const { error } = await this.supabase.storage.from(this.bucket).remove([storagePath])
     if (error) {
       this.logger.warn(`Supabase delete failed for ${storagePath}: ${error.message}`)
     }
@@ -58,7 +60,7 @@ export class FileStorageService {
 
   async open(storagePath: string): Promise<Buffer> {
     const { data, error } = await this.supabase.storage
-      .from(BUCKET)
+      .from(this.bucket)
       .download(storagePath)
 
     if (error || !data) {

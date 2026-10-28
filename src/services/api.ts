@@ -44,7 +44,9 @@ function accessToken() {
 }
 
 function url(path: string) {
-  return path.startsWith('http') ? path : `${API_URL}${path}`
+  if (path.startsWith('http')) return path
+  const cleanPath = path.startsWith('/api/') ? path.slice(4) : path.startsWith('/') ? path : `/${path}`
+  return `${API_URL}${cleanPath}`
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -191,11 +193,12 @@ async function dataUrlToFile(dataUrl: string, fileName: string) {
 }
 
 function toSignature(type: string, data?: string): Signature {
-  if (type === 'drawn' || type === 'uploaded') return data ? { type, data } : { type }
+  const norm = type?.toLowerCase() as Signature['type']
+  if (norm === 'drawn' || norm === 'uploaded') return data ? { type: norm, data } : { type: norm }
   return { type: 'none' }
 }
 
-async function normaliseApplication(application: ServerApplication): Promise<Application> {
+async function normaliseApplication(application: ServerApplication, fallback?: Application | null): Promise<Application> {
   const [photograph, signatureData] = await Promise.all([
     application.photographUrl ? protectedObjectUrl(application.photographUrl) : Promise.resolve(undefined),
     application.signature.url ? protectedObjectUrl(application.signature.url) : Promise.resolve(undefined),
@@ -204,8 +207,11 @@ async function normaliseApplication(application: ServerApplication): Promise<App
   return {
     ...application,
     currentStep: Math.min(8, Math.max(1, application.currentStep)) as Application['currentStep'],
-    photograph: photograph ?? (application as unknown as Application).photograph,
-    signature: toSignature(application.signature.type, signatureData ?? (application.signature as unknown as Signature).data),
+    photograph: photograph ?? fallback?.photograph,
+    signature: toSignature(
+      application.signature.type,
+      signatureData ?? (application.signature.type?.toLowerCase() !== 'none' ? fallback?.signature?.data : undefined),
+    ),
     documents: application.documents.map((document) => ({ ...document })),
   }
 }
@@ -289,9 +295,11 @@ export async function createApplication(selectedProgramme: Programme): Promise<A
   }
 }
 
-export async function getApplication(applicationId: string): Promise<Application> {
+export async function getApplication(applicationId: string, fallback?: Application | null): Promise<Application> {
   try {
-    return await normaliseApplication(await request<ServerApplication>(`/applications/${applicationId}`))
+    const existingFallback = fallback ?? getLocalDraft()
+    const appFallback = existingFallback?.id === applicationId ? existingFallback : undefined
+    return await normaliseApplication(await request<ServerApplication>(`/applications/${applicationId}`), appFallback)
   } catch (err) {
     if (err instanceof ApiError) throw err
     const all = getAllLocalApplications()
@@ -306,7 +314,7 @@ export async function getApplication(applicationId: string): Promise<Application
 export async function getMyApplications(): Promise<Application[]> {
   try {
     const applications = await request<ServerApplication[]>('/applications/mine')
-    return Promise.all(applications.map(normaliseApplication))
+    return Promise.all(applications.map((item) => normaliseApplication(item)))
   } catch (err) {
     if (err instanceof ApiError) throw err
     return getAllLocalApplications()
@@ -324,9 +332,9 @@ export async function saveApplication(application: Application): Promise<Applica
       application.documents?.some(d => isDataUrl(d.fileData))
     if (hasNewFiles) {
       await synchroniseFiles(application, server)
-      return await getApplication(application.id)
+      return await getApplication(application.id, application)
     }
-    return await normaliseApplication(server)
+    return await normaliseApplication(server, application)
   } catch (err) {
     if (err instanceof ApiError) throw err
     console.info('[PhD Portal] Backend offline. Draft saved to browser storage.')
@@ -361,7 +369,7 @@ export async function getReviewApplications(filters?: { status?: string; program
   if (filters?.programme) params.set('programme', filters.programme)
   const qs = params.toString() ? `?${params.toString()}` : ''
   const applications = await request<ServerApplication[]>(`/applications/review${qs}`)
-  return Promise.all(applications.map(normaliseApplication))
+  return Promise.all(applications.map((item) => normaliseApplication(item)))
 }
 
 export async function updateApplicationStatus(

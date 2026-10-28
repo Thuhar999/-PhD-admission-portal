@@ -12,9 +12,10 @@ interface Props {
 
 export function SignaturePad({ value, onChange, readOnly }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [mode, setMode] = useState<'draw' | 'upload'>('draw')
+  const [mode, setMode] = useState<'draw' | 'upload'>(value.type === 'uploaded' ? 'upload' : 'draw')
   const [drawing, setDrawing] = useState(false)
-  const [hasDrawn, setHasDrawn] = useState(false)
+  const [hasDrawn, setHasDrawn] = useState(Boolean(value.type === 'drawn' && value.data))
+  const loadedSignatureRef = useRef<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -28,6 +29,16 @@ export function SignaturePad({ value, onChange, readOnly }: Props) {
     ctx.lineWidth = 2
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
+
+    if (mode === 'draw' && value.type === 'drawn' && value.data && loadedSignatureRef.current !== value.data) {
+      loadedSignatureRef.current = value.data
+      const img = new Image()
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        setHasDrawn(true)
+      }
+      img.src = value.data
+    }
   }, [mode])
 
   const getPos = (e: React.MouseEvent | React.TouchEvent) => {
@@ -42,11 +53,14 @@ export function SignaturePad({ value, onChange, readOnly }: Props) {
   }
 
   const startDraw = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault(); setDrawing(true); setHasDrawn(true)
+    e.preventDefault()
+    setDrawing(true)
+    setHasDrawn(true)
     const ctx = canvasRef.current?.getContext('2d')
     if (!ctx) return
     const pos = getPos(e)
-    ctx.beginPath(); ctx.moveTo(pos.x, pos.y)
+    ctx.beginPath()
+    ctx.moveTo(pos.x, pos.y)
   }
 
   const draw = (e: React.MouseEvent | React.TouchEvent) => {
@@ -55,10 +69,21 @@ export function SignaturePad({ value, onChange, readOnly }: Props) {
     const ctx = canvasRef.current?.getContext('2d')
     if (!ctx) return
     const pos = getPos(e)
-    ctx.lineTo(pos.x, pos.y); ctx.stroke()
+    ctx.lineTo(pos.x, pos.y)
+    ctx.stroke()
   }
 
-  const endDraw = () => setDrawing(false)
+  const endDraw = () => {
+    if (!drawing) return
+    setDrawing(false)
+    const canvas = canvasRef.current
+    if (canvas) {
+      const data = canvas.toDataURL('image/png')
+      loadedSignatureRef.current = data
+      setHasDrawn(true)
+      onChange({ type: 'drawn', data })
+    }
+  }
 
   const clearCanvas = () => {
     const canvas = canvasRef.current
@@ -67,19 +92,23 @@ export function SignaturePad({ value, onChange, readOnly }: Props) {
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0, 0, canvas.width, canvas.height)
     setHasDrawn(false)
+    loadedSignatureRef.current = null
     onChange({ type: 'none' })
   }
 
   const saveDrawn = () => {
     const canvas = canvasRef.current
     if (!canvas) return
-    onChange({ type: 'drawn', data: canvas.toDataURL('image/png') })
+    const data = canvas.toDataURL('image/png')
+    loadedSignatureRef.current = data
+    onChange({ type: 'drawn', data })
   }
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    onChange({ type: 'uploaded', data: await fileToBase64(file) })
+    const b64 = await fileToBase64(file)
+    onChange({ type: 'uploaded', data: b64 })
   }
 
   if (readOnly) {
@@ -109,7 +138,7 @@ export function SignaturePad({ value, onChange, readOnly }: Props) {
       {mode === 'draw' ? (
         <div className="space-y-2">
           <canvas ref={canvasRef} width={400} height={120}
-            className="sig-canvas w-full h-28 border-2 border-dashed border-gray-300 rounded-lg bg-white"
+            className="sig-canvas w-full h-28 border-2 border-dashed border-gray-300 rounded-lg bg-white touch-none"
             onMouseDown={startDraw} onMouseMove={draw} onMouseUp={endDraw} onMouseLeave={endDraw}
             onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={endDraw} />
           <p className="text-xs text-gray-400">Sign above using your mouse or touch</p>
@@ -123,8 +152,8 @@ export function SignaturePad({ value, onChange, readOnly }: Props) {
               <Save size={12} /> Save Signature
             </button>
           </div>
-          {value.type === 'drawn' && (
-            <p className="text-xs text-green-700 font-semibold">✓ Signature saved</p>
+          {value.type === 'drawn' && value.data && (
+            <p className="text-xs text-green-700 font-semibold">✓ Signature captured & saved</p>
           )}
         </div>
       ) : (

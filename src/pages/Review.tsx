@@ -41,7 +41,13 @@ export function Review() {
     }
   }
 
-  if (!app) return null
+  if (!app) {
+    return (
+      <div className="min-h-screen flex items-center justify-center font-poppins bg-[#f8f9f6] text-sm text-gray-600">
+        Loading application preview…
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen flex flex-col font-poppins bg-[#f8f9f6]">

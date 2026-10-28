@@ -578,14 +578,14 @@ export class ApplicationsService {
   }
 
   private photoUrl(applicationId: string) {
-    return `/api/applications/${applicationId}/photo`
+    return `/applications/${applicationId}/photo`
   }
 
   private signatureUrl(applicationId: string) {
-    return `/api/applications/${applicationId}/signature`
+    return `/applications/${applicationId}/signature`
   }
 
   private documentUrl(applicationId: string, documentId: string) {
-    return `/api/applications/${applicationId}/documents/${documentId}/download`
+    return `/applications/${applicationId}/documents/${documentId}/download`
   }
 }
