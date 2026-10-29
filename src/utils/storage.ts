@@ -16,10 +16,17 @@ export async function loadDraft(): Promise<Application | null> {
 
   try {
     const applicationId = localStorage.getItem(APPLICATION_ID_KEY)
-    if (applicationId) return await getApplication(applicationId)
+    if (applicationId) {
+      try {
+        const app = await getApplication(applicationId)
+        if (app) return app
+      } catch {
+        localStorage.removeItem(APPLICATION_ID_KEY)
+      }
+    }
 
     const applications = await getMyApplications()
-    const application = applications.find((item) => item.status === 'draft') ?? applications[0] ?? null
+    const application = applications.find((item) => item.status?.toLowerCase() === 'draft') ?? applications[0] ?? null
     if (application) localStorage.setItem(APPLICATION_ID_KEY, application.id)
     return application
   } catch {

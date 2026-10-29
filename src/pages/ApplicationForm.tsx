@@ -40,7 +40,8 @@ export function ApplicationForm() {
   useEffect(() => {
     void (async () => {
       const existing = await loadDraft()
-      if (!existing || !existing.selectedProgramme || existing.status !== 'draft') {
+      const isDraft = existing?.status?.toLowerCase() === 'draft'
+      if (!existing || !existing.selectedProgramme || !isDraft) {
         navigate('/phd-admission')
         return
       }

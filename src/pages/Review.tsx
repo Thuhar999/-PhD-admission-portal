@@ -17,7 +17,8 @@ export function Review() {
   useEffect(() => {
     void (async () => {
       const draft = await loadDraft()
-      if (!draft || !draft.selectedProgramme || draft.status !== 'draft') {
+      const isDraft = draft?.status?.toLowerCase() === 'draft'
+      if (!draft || !draft.selectedProgramme || !isDraft) {
         navigate('/phd-admission')
         return
       }

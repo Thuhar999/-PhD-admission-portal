@@ -36,13 +36,15 @@ export function PhDAdmission() {
           const current = await loadDraft()
           if (current) apps = [current]
         }
-        const submitted = apps.filter(item => item.status !== 'draft')
-        const currentDraft = apps.find(item => item.status === 'draft') ?? null
+        const submitted = apps.filter(item => item.status?.toLowerCase() !== 'draft')
+        const currentDraft = apps.find(item => item.status?.toLowerCase() === 'draft') ?? null
 
         setSubmittedApps(submitted)
         if (currentDraft) {
           setDraft(currentDraft)
           setSelectedProgramme(currentDraft.selectedProgramme)
+        } else {
+          setSelectedProgramme(prev => prev ?? 'CSE')
         }
       } catch (err) {
         console.error('Failed to load applications', err)
@@ -53,18 +55,22 @@ export function PhDAdmission() {
   }, [])
 
   const handleStart = async () => {
-    if (!selectedProgramme) return
+    if (!selectedProgramme) {
+      setError('Please click on one of the department cards to select your Ph.D. programme.')
+      return
+    }
     setError('')
     setLoading(true)
     try {
-      if (draft && draft.status === 'draft') {
-        await saveDraft({ ...draft, selectedProgramme })
+      if (draft && draft.status?.toLowerCase() === 'draft') {
+        const updated = await saveDraft({ ...draft, selectedProgramme })
+        saveCurrentApplication(updated)
       } else {
         await createServerApplication(selectedProgramme)
       }
       navigate('/application')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not create the application draft.')
+      setError(err instanceof Error ? err.message : 'Could not start the application.')
     } finally {
       setLoading(false)
     }
@@ -426,6 +432,11 @@ export function PhDAdmission() {
               </div>
 
               {/* Selected Banner & CTA */}
+              {error && (
+                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-medium">
+                  {error}
+                </div>
+              )}
               <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6">
                 <div>
                   <span className="text-xs uppercase font-bold text-gray-400 tracking-wider">
@@ -459,11 +470,11 @@ export function PhDAdmission() {
                   )}
                   <button
                     type="button"
-                    disabled={!selectedProgramme || loading}
+                    disabled={loading}
                     onClick={() => void handleStart()}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-primary-700 hover:bg-primary-800 text-white font-semibold text-sm rounded-xl transition-all shadow-md hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-primary-700 disabled:shadow-none flex-shrink-0 cursor-pointer"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-primary-700 hover:bg-primary-800 text-white font-semibold text-sm rounded-xl transition-all shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed flex-shrink-0 cursor-pointer"
                   >
-                    <span>START APPLICATION</span>
+                    <span>{loading ? 'STARTING APPLICATION...' : 'START APPLICATION'}</span>
                     <ArrowRight size={16} />
                   </button>
                 </div>

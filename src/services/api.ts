@@ -206,6 +206,7 @@ async function normaliseApplication(application: ServerApplication, fallback?: A
 
   return {
     ...application,
+    status: (application.status?.toLowerCase() ?? 'draft') as Application['status'],
     currentStep: Math.min(8, Math.max(1, application.currentStep)) as Application['currentStep'],
     photograph: photograph ?? fallback?.photograph,
     signature: toSignature(
